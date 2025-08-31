@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://cpky7nv0jirg4"]
+
+[ext_resource type="PackedScene" uid="uid://cgwgtcxnuuhhg" path="res://assets/tiles/grass-tile-center.glb" id="1_r4l5s"]
+
+[node name="Grass-tiles" type="Node3D"]
+
+[node name="grass-tile-center" parent="." instance=ExtResource("1_r4l5s")]

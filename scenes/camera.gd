@@ -1,6 +1,6 @@
 extends Node3D
 
-@export var pan_speed: float = 0.4
+@export var pan_speed: float = 0.2
 @export var zoom_speed: float = 0.5
 @export var edge_margin: int = 20
 

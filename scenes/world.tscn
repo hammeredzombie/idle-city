@@ -1,13 +1,22 @@
-[gd_scene load_steps=4 format=3 uid="uid://b520ju3fr6gcc"]
+[gd_scene load_steps=9 format=3 uid="uid://b520ju3fr6gcc"]
 
 [ext_resource type="Script" uid="uid://d3d2torvxohp" path="res://scenes/world.gd" id="1_rwgxs"]
 [ext_resource type="PackedScene" uid="uid://c8ht2n0hhlonv" path="res://scenes/environment/sea.tscn" id="3_4wyf3"]
 [ext_resource type="Script" uid="uid://jp2mpf2cjxx1" path="res://scenes/camera.gd" id="4_71j4m"]
+[ext_resource type="MeshLibrary" uid="uid://b3yxmb8dq5txv" path="res://assets/grass-tiles.tres" id="4_qfnet"]
+[ext_resource type="Script" uid="uid://bumdd8er3vbmf" path="res://scenes/island.gd" id="5_71j4m"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_71j4m"]
+
+[sub_resource type="Sky" id="Sky_71j4m"]
+sky_material = SubResource("ProceduralSkyMaterial_71j4m")
+
+[sub_resource type="Environment" id="Environment_71j4m"]
+background_mode = 2
+sky = SubResource("Sky_71j4m")
 
 [node name="World" type="Node3D"]
 script = ExtResource("1_rwgxs")
-
-[node name="GridMap" type="GridMap" parent="."]
 
 [node name="Camera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 15, 0)
@@ -15,3 +24,15 @@ far = 500.0
 script = ExtResource("4_71j4m")
 
 [node name="Sea" parent="." instance=ExtResource("3_4wyf3")]
+
+[node name="Island" type="GridMap" parent="."]
+mesh_library = ExtResource("4_qfnet")
+script = ExtResource("5_71j4m")
+
+[node name="Road" type="GridMap" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.323917, 0.946085, 0, -0.946085, 0.323917, 0, 0, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_71j4m")
