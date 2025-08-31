@@ -13,5 +13,8 @@ script = ExtResource("1_rwgxs")
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 15, 0)
 far = 500.0
 script = ExtResource("4_71j4m")
+pan_speed = null
+zoom_speed = null
+edge_margin = null
 
 [node name="Sea" parent="." instance=ExtResource("3_4wyf3")]

@@ -1,107 +1,139 @@
 extends Node3D
 
-@export var pan_speed: float = 0.20
-@export var zoom_speed: float = 0.25
+@export var pan_speed: float = 0.4
+@export var zoom_speed: float = 0.5
 @export var edge_margin: int = 20
 
+@export var rotate_sensitivity: float = 0.05   # degrees per pixel (yaw)
+@export var tilt_sensitivity: float = 0.05     # degrees per pixel (pitch)
+
+# position and angle constants
+const _starting_height: float = 10.0
+const _max_camera_pan: float = 50.0
+
+# zoom and swivel constants
+const _max_camera_height: float = 25.0
+const _min_camera_height: float = 5.0
+const _min_pitch_deg: float = -89.0 # 89 to prevent gimbal lock
+const _max_pitch_deg: float = -45.0
+
+# variables
 var camera_x: float
 var camera_z: float
-
 var camera_height: float
 var camera_rotation: float
 var camera_angle: float
-
-const _starting_height: float = 10.0
-const starting_rotation: float = 0.0
-const starting_angle: float = -90.0
-
-const _max_height: float = 15.0
-const _min_height: float = 1.0
-
-var _boundry_min_x: float
-var _boundry_max_x: float
-var _boundry_min_z: float
-var _boundry_max_z: float
+var _is_swiveling: bool = false
+var _is_panning: bool = false
 
 func _ready() -> void:
 	camera_height = _starting_height
-	camera_angle = starting_angle
+	camera_rotation = 0.0
+	camera_angle = _min_pitch_deg
 
 func _process(_delta):
+	_is_panning = false
 	_pan_with_keyboard()
-	_pan_with_mouse()
-	_clamp_camera()
+	if _is_swiveling:
+		_swivel_camera()
+	elif not _is_panning:
+		_pan_with_mouse()
+	_apply_transforms()
 
 func _input(_event: InputEvent) -> void:
+	## Zoom inputs
 	if Input.is_action_just_pressed("zoom_in"):
-		camera_height = max(camera_height - zoom_speed, _min_height)
+		camera_height = max(camera_height - zoom_speed, _min_camera_height)
 	elif Input.is_action_just_pressed("zoom_out"):
-		camera_height = min(camera_height + zoom_speed, _max_height)
+		camera_height = min(camera_height + zoom_speed, _max_camera_height)
+	if Input.is_action_just_pressed("swivel"):
+		_is_swiveling = true
+	elif Input.is_action_just_released("swivel"):
+		_is_swiveling = false
+	# ## Swivel inputs
+	# if event is InputEventMouseButton:
+	# 	var mb := event as InputEventMouseButton
+	# 	if mb.button_index == MOUSE_BUTTON_RIGHT:
+	# 		if mb.pressed:
+	# 			_is_swiveling = true
+	# 		else:
+	# 			_is_swiveling = false
+	# if event is InputEventMouseMotion:
+	# 	if _is_swiveling:
+	# 		var mm := event as InputEventMouseMotion
+	# 		# Yaw: left/right drag
+	# 		camera_rotation -= mm.relative.x * rotate_sensitivity
+	# 		# Pitch: up/down drag (invert if you prefer)
+	# 		camera_angle -= mm.relative.y * tilt_sensitivity
+	# 		camera_angle = clamp(camera_angle, _min_pitch_deg, _max_pitch_deg)
 
-func _pan_with_keyboard() -> void:
+func _apply_transforms() -> void:
 	position.y = camera_height
 	position.x = camera_x
 	position.z = camera_z
 	rotation.x = deg_to_rad(camera_angle)
-	rotation.y = deg_to_rad(camera_rotation)
-	var pan_x := 0.0
-	var pan_z := 0.0
-	pan_x = Input.get_axis("camera_left", "camera_right")
-	pan_z = Input.get_axis("camera_forward", "camera_back")
-	camera_x += pan_x * pan_speed
-	camera_z += pan_z * pan_speed
+	rotation.y = deg_to_rad(camera_rotation)	
+
+func _pan_with_keyboard() -> void:
+	var amt_right := Input.get_axis("camera_left", "camera_right")
+	var amt_forward := -Input.get_axis("camera_forward", "camera_back") # forward = +1
+
+	if amt_right == 0.0 and amt_forward == 0.0:
+		return
+	_is_panning = true
+	var yaw := deg_to_rad(camera_rotation)
+	var new_basis := Basis(Vector3.UP, yaw)
+	var right := new_basis.x                  # +X at yaw=0
+	var forward := -new_basis.z               # -Z at yaw=0
+
+	var move := (right * amt_right + forward * amt_forward) * pan_speed
+	camera_x += move.x
+	camera_z += move.z
+	camera_x = clamp(camera_x, -_max_camera_pan, _max_camera_pan)
+	camera_z = clamp(camera_z, -_max_camera_pan, _max_camera_pan)
 
 func _pan_with_mouse() -> void:
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	if _is_swiveling:
+		return
+
+	var vp_size: Vector2 = get_viewport().get_visible_rect().size
 	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-	if mouse_pos.x <= edge_margin: # move left
-		camera_x -= pan_speed
-	elif mouse_pos.x >= viewport_size.x - edge_margin: # move right
-		camera_x += pan_speed
-	if mouse_pos.y <= edge_margin: # move up
-		camera_z -= pan_speed
-	elif mouse_pos.y >= viewport_size.y - edge_margin: # move down
-		camera_z += pan_speed
 
-func _clamp_camera():
-	# viewport info
-	var vp_size: Vector2i = get_viewport().get_visible_rect().size
-	var aspect := float(vp_size.x) / float(vp_size.y)
+	var amt_right := 0.0
+	var amt_forward := 0.0
 
-	# camera angles
-	var yaw := deg_to_rad(camera_rotation)              # around Y
-	var pitch := deg_to_rad(camera_angle)               # negative when looking down
-	var tilt_from_down: float = abs(pitch + PI * 0.5)         # 0 = straight down, up to ~0.785 (45°)
+	if mouse_pos.x <= edge_margin:
+		amt_right -= 1.0
+	elif mouse_pos.x >= vp_size.x - edge_margin:
+		amt_right += 1.0
 
-	# FOVs
-	var vfov := deg_to_rad($Camera3D.fov)
-	var hfov := 2.0 * atan(tan(vfov * 0.5) * aspect)
+	if mouse_pos.y <= edge_margin:        # up = forward
+		amt_forward += 1.0
+	elif mouse_pos.y >= vp_size.y - edge_margin:  # down = backward
+		amt_forward -= 1.0
 
-	# base half-extents at straight-down
-	var half_x_cam := camera_height * tan(hfov * 0.5)
-	var half_z_cam := camera_height * tan(vfov * 0.5)
+	if amt_right == 0.0 and amt_forward == 0.0:
+		return
+	var yaw := deg_to_rad(camera_rotation)
+	var new_basis := Basis(Vector3.UP, yaw)
+	var right := new_basis.x
+	var forward := -new_basis.z
 
-	# inflate for tilt (conservative): sec(tilt) = 1 / cos(tilt)
-	var inflate: float = 1.0 / max(0.0001, cos(tilt_from_down))
-	half_x_cam *= inflate
-	half_z_cam *= inflate
+	var move := (right * amt_right + forward * amt_forward) * pan_speed
+	camera_x += move.x
+	camera_z += move.z
+	camera_x = clamp(camera_x, -_max_camera_pan, _max_camera_pan)
+	camera_z = clamp(camera_z, -_max_camera_pan, _max_camera_pan)
 
-	# rotate extents into world axes (AABB of rotated rect)
-	var c: float = abs(cos(yaw))
-	var s: float = abs(sin(yaw))
-	var half_world_x: float = c * half_x_cam + s * half_z_cam
-	var half_world_z: float = s * half_x_cam + c * half_z_cam
-
-	# clamp against ground AABB (use your cached padded bounds)
-	var min_x: float = _boundry_min_x + half_world_x
-	var max_x: float = _boundry_max_x - half_world_x
-	var min_z: float = _boundry_min_z + half_world_z
-	var max_z: float = _boundry_max_z - half_world_z
-
-	if min_x > max_x or min_z > max_z:
-		# footprint larger than boundry -> center
-		camera_x = (_boundry_min_x + _boundry_max_x) * 0.5
-		camera_z = (_boundry_min_z + _boundry_max_z) * 0.5
-	else:
-		camera_x = clamp(camera_x, min_x, max_x)
-		camera_z = clamp(camera_z, min_z, max_z)
+func _swivel_camera() -> void:
+	if not _is_swiveling:
+		return
+	var vp_size: Vector2 = get_viewport().get_visible_rect().size
+	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	var center_screen: Vector2 = vp_size / 2.0
+	var delta: Vector2 = mouse_pos - center_screen
+	# Yaw: left/right drag
+	camera_rotation -= delta.x * rotate_sensitivity * 0.1
+	# Pitch: up/down drag (invert if you prefer)
+	camera_angle -= delta.y * tilt_sensitivity * 0.1
+	camera_angle = clamp(camera_angle, _min_pitch_deg, _max_pitch_deg)
