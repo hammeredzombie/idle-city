@@ -36,8 +36,8 @@ func _process(_delta):
 	_pan_with_keyboard()
 	if _is_swiveling:
 		_swivel_camera()
-	elif not _is_panning:
-		_pan_with_mouse()
+	# elif not _is_panning:
+	# 	_pan_with_mouse()
 	_apply_transforms()
 
 func _input(_event: InputEvent) -> void:

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://d3d2torvxohp" path="res://scenes/world.gd" id="1_rwgxs"]
 [ext_resource type="PackedScene" uid="uid://c8ht2n0hhlonv" path="res://scenes/environment/sea.tscn" id="3_4wyf3"]
 [ext_resource type="Script" uid="uid://jp2mpf2cjxx1" path="res://scenes/camera.gd" id="4_71j4m"]
-[ext_resource type="MeshLibrary" uid="uid://b3yxmb8dq5txv" path="res://assets/grass-tiles.tres" id="4_qfnet"]
+[ext_resource type="MeshLibrary" uid="uid://dutkpej3yw27p" path="res://assets/tiles/grass-tiles.tres" id="4_qfnet"]
 [ext_resource type="Script" uid="uid://bumdd8er3vbmf" path="res://scenes/island.gd" id="5_71j4m"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_71j4m"]
