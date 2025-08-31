@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://cpky7nv0jirg4"]
+[gd_scene load_steps=2 format=3 uid="uid://b7tjptuxfq8ba"]
 
-[ext_resource type="PackedScene" uid="uid://25ih0f6s7ltd" path="res://assets/tiles/grass-tiles.blend" id="1_sjwvb"]
+[ext_resource type="PackedScene" uid="uid://x5pv2nf1mxqc" path="res://assets/tiles/grass-tiles.blend" id="1_sjwvb"]
 
 [node name="Grass-tiles" type="Node3D"]
 

@@ -18,9 +18,9 @@ const basis_south = Basis(Vector3.UP, deg_to_rad(180))
 const basis_west = Basis(Vector3.UP, deg_to_rad(270))
 
 func _ready() -> void:
-	pass
+	_build_islands()
 
-func _build_island() -> void:
+func _build_islands() -> void:
 	var north_index: int = Grid.get_orthogonal_index_from_basis(basis_north)
 	var east_index: int = Grid.get_orthogonal_index_from_basis(basis_east)
 	var south_index: int = Grid.get_orthogonal_index_from_basis(basis_south)
@@ -74,4 +74,3 @@ func _build_island() -> void:
 				_:
 					Grid.set_cell_item(cell, MESH_INDEX.CENTER)
 				
-# Grid.get_orthogonal_index_from_basis
