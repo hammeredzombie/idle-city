@@ -1,7 +1,7 @@
 extends Node3D
 
 @export var pan_speed: float = 0.2
-@export var zoom_speed: float = 0.5
+@export var scroll_speed: float = 1.0
 @export var edge_margin: int = 20
 
 @export var rotate_sensitivity: float = 0.05   # degrees per pixel (yaw)
@@ -12,8 +12,8 @@ const _starting_height: float = 10.0
 const _max_camera_pan: float = 50.0
 
 # zoom and swivel constants
-const _max_camera_height: float = 25.0
-const _min_camera_height: float = 5.0
+const _min_camera_height: float = 3.0
+const _max_camera_height: float = 100.0
 const _min_pitch_deg: float = -89.0 # 89 to prevent gimbal lock
 const _max_pitch_deg: float = -45.0
 
@@ -25,7 +25,7 @@ var camera_rotation: float
 var camera_angle: float
 var _is_swiveling: bool = false
 var _is_panning: bool = false
-
+var _swivel_mouse_pos: Vector2 = Vector2.ZERO
 func _ready() -> void:
 	camera_height = _starting_height
 	camera_rotation = 0.0
@@ -36,36 +36,22 @@ func _process(_delta):
 	_pan_with_keyboard()
 	if _is_swiveling:
 		_swivel_camera()
-	# elif not _is_panning:
-	# 	_pan_with_mouse()
 	_apply_transforms()
 
 func _input(_event: InputEvent) -> void:
 	## Zoom inputs
 	if Input.is_action_just_pressed("zoom_in"):
-		camera_height = max(camera_height - zoom_speed, _min_camera_height)
+		_zoom_camera(1)
+		# camera_height = max(camera_height - zoom_speed, _min_camera_height)
 	elif Input.is_action_just_pressed("zoom_out"):
-		camera_height = min(camera_height + zoom_speed, _max_camera_height)
+		_zoom_camera(-1)
+		# camera_height = min(camera_height + zoom_speed, _max_camera_height)
 	if Input.is_action_just_pressed("swivel"):
+		_swivel_mouse_pos = get_viewport().get_mouse_position()
 		_is_swiveling = true
 	elif Input.is_action_just_released("swivel"):
+		_swivel_mouse_pos = Vector2.ZERO
 		_is_swiveling = false
-	# ## Swivel inputs
-	# if event is InputEventMouseButton:
-	# 	var mb := event as InputEventMouseButton
-	# 	if mb.button_index == MOUSE_BUTTON_RIGHT:
-	# 		if mb.pressed:
-	# 			_is_swiveling = true
-	# 		else:
-	# 			_is_swiveling = false
-	# if event is InputEventMouseMotion:
-	# 	if _is_swiveling:
-	# 		var mm := event as InputEventMouseMotion
-	# 		# Yaw: left/right drag
-	# 		camera_rotation -= mm.relative.x * rotate_sensitivity
-	# 		# Pitch: up/down drag (invert if you prefer)
-	# 		camera_angle -= mm.relative.y * tilt_sensitivity
-	# 		camera_angle = clamp(camera_angle, _min_pitch_deg, _max_pitch_deg)
 
 func _apply_transforms() -> void:
 	position.y = camera_height
@@ -126,14 +112,37 @@ func _pan_with_mouse() -> void:
 	camera_z = clamp(camera_z, -_max_camera_pan, _max_camera_pan)
 
 func _swivel_camera() -> void:
-	if not _is_swiveling:
+	if not _is_swiveling or _swivel_mouse_pos == Vector2.ZERO:
 		return
-	var vp_size: Vector2 = get_viewport().get_visible_rect().size
 	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
-	var center_screen: Vector2 = vp_size / 2.0
-	var delta: Vector2 = mouse_pos - center_screen
+	var delta: Vector2 = mouse_pos - _swivel_mouse_pos
 	# Yaw: left/right drag
 	camera_rotation -= delta.x * rotate_sensitivity * 0.1
 	# Pitch: up/down drag (invert if you prefer)
 	camera_angle -= delta.y * tilt_sensitivity * 0.1
 	camera_angle = clamp(camera_angle, _min_pitch_deg, _max_pitch_deg)
+
+func _zoom_camera(step: int) -> void:
+	var forward := -transform.basis.z.normalized()  # local forward
+	var cur := Vector3(camera_x, camera_height, camera_z)
+	var zoom_speed: float
+	if camera_height >= _max_camera_height / 2:
+		zoom_speed = 3.0
+	elif camera_height <= _max_camera_height / 4:
+		zoom_speed = 0.5
+	else:
+		zoom_speed = 1.0
+	var delta := forward * step * zoom_speed * scroll_speed
+	var target := cur + delta
+	# Respect min/max camera height by scaling if we'd overshoot
+	if delta.y != 0.0:
+		if target.y < _min_camera_height and delta.y < 0.0:
+			var t := (_min_camera_height - cur.y) / delta.y
+			delta *= t
+		elif target.y > _max_camera_height and delta.y > 0.0:
+			var t := (_max_camera_height - cur.y) / delta.y
+			delta *= t
+	cur += delta
+	camera_x = clamp(cur.x, -_max_camera_pan, _max_camera_pan)
+	camera_z = clamp(cur.z, -_max_camera_pan, _max_camera_pan)
+	camera_height = clamp(cur.y, _min_camera_height, _max_camera_height)
