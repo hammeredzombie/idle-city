@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://b7tjptuxfq8ba"]
-
-[ext_resource type="PackedScene" uid="uid://x5pv2nf1mxqc" path="res://assets/tiles/grass-tiles.blend" id="1_sjwvb"]
-
-[node name="Grass-tiles" type="Node3D"]
-
-[node name="grass-tiles" parent="." instance=ExtResource("1_sjwvb")]
