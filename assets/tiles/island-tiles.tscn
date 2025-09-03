@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://d7jmjydu77fj"]
+
+[ext_resource type="PackedScene" uid="uid://dloxhx63miu07" path="res://assets/tiles/island-tiles.blend" id="1_goixq"]
+
+[node name="Island-tiles" type="Node3D"]
+
+[node name="island-tiles" parent="." instance=ExtResource("1_goixq")]
