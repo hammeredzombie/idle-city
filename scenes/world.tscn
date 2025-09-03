@@ -23,6 +23,8 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 far = 500.0
 script = ExtResource("4_71j4m")
 
+[node name="PointerRay" type="RayCast3D" parent="Camera"]
+
 [node name="Sea" parent="." instance=ExtResource("3_4wyf3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.75, 0)
 
@@ -38,5 +40,6 @@ metadata/_editor_floor_ = Vector3(0, 1, 0)
 [node name="Road" parent="." instance=ExtResource("5_qfnet")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.53, 0.5)
 data = {
-"cells": PackedInt32Array(65535, 1, 1048577, 0, 1, 655383, 65535, 2, 1048599, 65534, 1, 0, 65534, 0, 0, 65534, 65535, 0, 65534, 65534, 0, 65533, 0, 1441792, 65532, 0, 1441792)
+"cells": PackedInt32Array(32, 65484, 1441801)
 }
+metadata/_editor_floor_ = Vector3(0, 0, 0)
