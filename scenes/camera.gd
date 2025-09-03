@@ -1,11 +1,11 @@
 extends Node3D
 
-@export var pan_speed: float = 0.2
+@export var pan_speed: float = 0.1
 @export var scroll_speed: float = 1.0
 @export var edge_margin: int = 20
 
-@export var rotate_sensitivity: float = 0.05   # degrees per pixel (yaw)
-@export var tilt_sensitivity: float = 0.05     # degrees per pixel (pitch)
+@export var rotate_sensitivity: float = 0.03   # degrees per pixel (yaw)
+@export var tilt_sensitivity: float = 0.03     # degrees per pixel (pitch)
 
 # position and angle constants
 const _starting_height: float = 10.0
