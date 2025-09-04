@@ -1,26 +1,33 @@
 extends GridMap
 
 enum MESH_INDEX {
-	SPLIT,
-	STRAIGHT,
-	TILE,
-	BEND_ROUND,
-	BEND_SQUARE,
-	STRAIGHT_CROSSING,
-	FOUR_WAY,
-	FOUR_WAY_CROSSING,
-	BEND_2X2,
-	BEND_INTERSECTION_2X2,
-	STRAIGHT_DRIVEWAY_DOUBLE,
-	STRAIGHT_DRIVEWAY_SINGLE,
-	STRAIGHT_END_SQUARE,
-	STRAIGHT_END_ROUND,
-	T_INTERSECTION,
-	T_INTERSECTION_CROSSING,
-	ROUND_ABOUT_3X3,
+	straight,
+	straight_preview,
+	straight_crossing,
+	straight_crossing_preview,
+	end,
+	end_preview,
+	end_round,
+	end_round_preview,
+	bend,
+	bend_preview,
+	bend_round,
+	bend_round_preview,
+	intersection,
+	intersection_preview,
+	intersection_crossing,
+	intersection_crossing_preview,
+	t_intersection,
+	t_intersection_preview,
+	t_intersection_crossing,
+	t_intersection_crossing_preview,
+	driveway_double,
+	driveway_double_preview,
+	driveway_single,
+	driveway_single_preview,
+	tile,
+	tile_preview,
 }
-
-const MAX_MESH_INDEX: int = MESH_INDEX.ROUND_ABOUT_3X3
 
 @export var target_layer_y: int = 0
 @onready var camera: Camera3D = get_viewport().get_camera_3d()
@@ -32,7 +39,7 @@ var _preview_active: bool = false
 var _preview_cell: Vector3i
 
 var _curr_cell:Vector3i = Vector3i(-1, -1, -1)
-var _curr_tile:MESH_INDEX = MESH_INDEX.STRAIGHT
+var _curr_tile:MESH_INDEX = MESH_INDEX.straight
 var _curr_orientation: Basis = Basis()
 
 func _input(event: InputEvent) -> void:
@@ -148,3 +155,4 @@ func _remove_preview(cell: Vector3i) -> void:
 func _get_preview_tile(index: int) -> int:
 	var preview_index = index + MAX_MESH_INDEX + 1
 	return preview_index
+
