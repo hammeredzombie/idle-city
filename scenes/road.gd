@@ -18,8 +18,9 @@ enum MESH_INDEX {
 	T_INTERSECTION,
 	T_INTERSECTION_CROSSING,
 	ROUND_ABOUT_3X3,
-	INVALID
 }
+
+const MAX_MESH_INDEX: int = MESH_INDEX.ROUND_ABOUT_3X3
 
 @export var target_layer_y: int = 0
 @onready var camera: Camera3D = get_viewport().get_camera_3d()
@@ -27,42 +28,76 @@ enum MESH_INDEX {
 var _is_building:bool = true
 var _is_placing:bool = false
 var _is_removing:bool = false
+var _preview_active: bool = false
+var _preview_cell: Vector3i
 
 var _curr_cell:Vector3i = Vector3i(-1, -1, -1)
 var _curr_tile:MESH_INDEX = MESH_INDEX.STRAIGHT
-var _curr_orientation:int
+var _curr_orientation: Basis = Basis()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("road_builder"):
 		_is_building = !_is_building
 
-	if _is_building:
-		if event.is_action_pressed("mouse_left"):
-			_is_placing = true
-			_place_tile(_curr_cell)
-		if event.is_action_released("mouse_left"):
-			_is_placing = false
+	if not _is_building:
+		return
 
-		if event.is_action_pressed("mouse_right"):
-			_is_removing = true
-			_remove_tile(_curr_cell)
-		if event.is_action_released("mouse_right"):
-			_is_removing = false
+	if event.is_action_pressed("mouse_left"):
+		_is_placing = true
+		_curr_cell = _get_cell_under_mouse()
+		_place_tile(_curr_cell)
+	if event.is_action_released("mouse_left"):
+		_is_placing = false
+
+	if event.is_action_pressed("mouse_right"):
+		_is_removing = true
+		_curr_cell = _get_cell_under_mouse()
+		_remove_tile(_curr_cell)
+	if event.is_action_released("mouse_right"):
+		_is_removing = false
+
+	if event.is_action_pressed("rotate_right"):
+		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(90))
+		_curr_cell = _get_cell_under_mouse()
+		_preview_tile(_curr_cell)
+	if event.is_action_pressed("rotate_left"):
+		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(-90))
+		_curr_cell = _get_cell_under_mouse()
+		_preview_tile(_curr_cell)
 
 func _process(_delta: float) -> void:
+	# Hover preview
 	if _is_building and not (_is_placing or _is_removing):
-		_curr_cell = _get_cell_under_mouse()
-	## Drag and place
+		var next_cell: Vector3i = _get_cell_under_mouse()
+
+		# if we moved to a different cell, remove the old preview
+		if _preview_active and next_cell != _preview_cell:
+			# implement this to undo whatever _preview_tile() did
+			_remove_preview(_preview_cell)
+			_preview_active = false
+
+		# show preview on the current hover cell (first time or moved)
+		if not _preview_active or next_cell != _preview_cell:
+			_preview_tile(next_cell)
+			_preview_cell = next_cell
+			_preview_active = true
+
+	# Drag and place / remove
 	if _is_building and (_is_placing or _is_removing):
-		var last_cell = _curr_cell
-		var next_cell:Vector3i = _get_cell_under_mouse()
-		print('last_cell: ', last_cell, ' next_cell: ', next_cell)
-		if next_cell != last_cell:
-			last_cell = next_cell
+		var next_cell: Vector3i = _get_cell_under_mouse()
+
+		# clear any hover preview while dragging
+		if _preview_active:
+			_remove_preview(_preview_cell)
+			_preview_active = false
+
+		# act only when the cell changes
+		if next_cell != _curr_cell:
+			_curr_cell = next_cell
 			if _is_placing:
-				_place_tile(last_cell)
+				_place_tile(_curr_cell)
 			if _is_removing:
-				_remove_tile(last_cell)
+				_remove_tile(_curr_cell)
 
 func _get_cell_under_mouse() -> Vector3i:
 	if camera == null:
@@ -95,7 +130,21 @@ func _get_cell_under_mouse() -> Vector3i:
 	return cell
 
 func _place_tile(cell: Vector3i) -> void:
-	set_cell_item(cell, _curr_tile, _curr_orientation)
+	set_cell_item(cell, _curr_tile, get_orthogonal_index_from_basis(_curr_orientation))
 
 func _remove_tile(cell: Vector3i) -> void:
 	set_cell_item(cell, -1, 0)
+
+func _preview_tile(cell: Vector3i) -> void:
+	var item_index = get_cell_item(cell)
+	if item_index >= 0 and item_index <= MAX_MESH_INDEX:
+		return
+	set_cell_item(cell, _get_preview_tile(_curr_tile), get_orthogonal_index_from_basis(_curr_orientation))
+
+func _remove_preview(cell: Vector3i) -> void:
+	if get_cell_item(cell) >= MAX_MESH_INDEX + 1:
+		set_cell_item(cell, -1, 0)
+
+func _get_preview_tile(index: int) -> int:
+	var preview_index = index + MAX_MESH_INDEX + 1
+	return preview_index
