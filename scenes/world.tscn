@@ -42,8 +42,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.53, 0.5)
 data = {
 "cells": PackedInt32Array(32, 65484, 1441801)
 }
-data = {
-"cells": PackedInt32Array(32, 65484, 1441801)
-}
-target_layer_y = null
 metadata/_editor_floor_ = Vector3(0, 0, 0)
