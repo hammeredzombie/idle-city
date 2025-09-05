@@ -1,5 +1,63 @@
 extends GridMap
 
+const MESH_NAME: Dictionary = {
+	"straight": 'straight',
+	"straight_preview": 'straight_preview',
+	"straight_crossing": 'straight-crossing',
+	"straight_crossing_preview": 'straight-crossing_preview',
+	"end": 'end',
+	"end_preview": 'end_preview',
+	"end_round": 'end-round',
+	"end_round_preview": 'end-round_preview',
+	"bend": 'bend',
+	"bend_preview": 'bend_preview',
+	"bend_round": 'bend-round',
+	"bend_round_preview": 'bend-round_preview',
+	"intersection": 'intersection',
+	"intersection_preview": 'intersection_preview',
+	"intersection_crossing": 'intersection-crossing',
+	"intersection_crossing_preview": 'intersection-crossing_preview',
+	"t_intersection": 't-intersection',
+	"t_intersection_preview": 't-intersection_preview',
+	"t_intersection_crossing": 't-intersection-crossing',
+	"t_intersection_crossing_preview": 't-intersection-crossing_preview',
+	"driveway_double": 'driveway-double',
+	"driveway_double_preview": 'driveway-double_preview',
+	"driveway_single": 'driveway-single',
+	"driveway_single_preview": 'driveway-single_preview',
+	"tile": 'tile',
+	"tile_preview": 'tile_preview',
+}
+
+const MESH_ORDER: Array[String] = [
+	'straight',
+	'straight_preview',
+	'straight_crossing',
+	'straight_crossing_preview',
+	'end',
+	'end_preview',
+	'end_round',
+	'end_round_preview',
+	'bend',
+	'bend_preview',
+	'bend_round',
+	'bend_round_preview',
+	'intersection',
+	'intersection_preview',
+	'intersection_crossing',
+	'intersection_crossing_preview',
+	't_intersection',
+	't_intersection_preview',
+	't_intersection_crossing',
+	't_intersection_crossing_preview',
+	'driveway_double',
+	'driveway_double_preview',
+	'driveway_single',
+	'driveway_single_preview',
+	'tile',
+	'tile_preview',
+]
+
 enum MESH_INDEX {
 	straight,
 	straight_preview,
@@ -91,6 +149,8 @@ var _curr_tile:int = MESH_INDEX.straight
 # var _curr_type:int = TILE_TYPE.straight
 var _curr_orientation: Basis = Basis()
 
+var meshes: Array[int]
+
 @onready var grid: GridMap = self
 @onready var camera: Camera3D = get_viewport().get_camera_3d()
 @onready var ui: Control = get_node('UI')
@@ -133,10 +193,12 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("rotate_right"):
 		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(90))
 		_curr_cell = _get_cell_under_mouse()
+		_remove_preview(_curr_cell)
 		_preview_tile(_curr_cell)
 	if event.is_action_pressed("rotate_left"):
 		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(-90))
 		_curr_cell = _get_cell_under_mouse()
+		_remove_preview(_curr_cell)
 		_preview_tile(_curr_cell)
 	
 	#change tile type
@@ -219,24 +281,26 @@ func _get_cell_under_mouse() -> Vector3i:
 	return cell
 
 func _place_tile(cell: Vector3i) -> void:
-	set_cell_item(cell, _curr_tile, get_orthogonal_index_from_basis(_curr_orientation))
+	set_cell_item(cell, meshes[_curr_tile], get_orthogonal_index_from_basis(_curr_orientation))
 
 func _remove_tile(cell: Vector3i) -> void:
 	set_cell_item(cell, -1, 0)
 
 func _preview_tile(cell: Vector3i) -> void:
+	print(_curr_orientation)
 	var item_index = get_cell_item(cell)
 	if item_index == -1:
-		set_cell_item(cell, _get_tile_preview(_curr_tile), get_orthogonal_index_from_basis(_curr_orientation))
+		set_cell_item(cell, meshes[_get_tile_preview_index(_curr_tile)], get_orthogonal_index_from_basis(_curr_orientation))
 
 func _remove_preview(cell: Vector3i) -> void:
 	# only remove if a preview tile
 	if get_cell_item(cell) % 2 == 1: # preview tiles are odd indexed
 		set_cell_item(cell, -1, 0)
 
-func _get_tile_preview(index: int) -> int:
+func _get_tile_preview_index(index: int) -> int:
 	var preview_index = index + 1
 	return preview_index
+
 
 #UI thumbnails
 # func _choose_or_cycle_type(type:TILE_TYPE):
@@ -285,4 +349,12 @@ func _get_tile_preview(index: int) -> int:
 
 func _assign_mesh_indices() -> void:
 	var lib: MeshLibrary = grid.mesh_library
-	print(lib)
+	for mesh in MESH_ORDER:
+		var meshName = MESH_NAME[mesh]
+		var meshIndex = lib.find_item_by_name(meshName)
+		if meshIndex == -1:
+			push_error("could not find mesh with name: ", meshName)
+			set_process(false)
+			set_process_input(false)
+			return
+		meshes.push_back(meshIndex)
