@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://ctxqxtqrxcpru"]
+[gd_scene load_steps=6 format=3 uid="uid://ctxqxtqrxcpru"]
 
 [ext_resource type="MeshLibrary" uid="uid://c4hj72p1g2126" path="res://assets/tiles/road-tiles.tres" id="1_mv8x7"]
+[ext_resource type="Script" uid="uid://bgj0sgh37hokt" path="res://scenes/road.gd" id="2_xeiim"]
 [ext_resource type="Texture2D" uid="uid://dbj022vsecqhr" path="res://assets/tiles/thumbnails/straight.png" id="3_xeiim"]
 [ext_resource type="Texture2D" uid="uid://drl1mrxbt8yaq" path="res://assets/tiles/thumbnails/bend.png" id="4_wqt8r"]
 [ext_resource type="Texture2D" uid="uid://btbv31odykl7f" path="res://assets/tiles/thumbnails/intersection.png" id="5_xeiim"]
@@ -8,6 +9,7 @@
 [node name="Road" type="GridMap"]
 mesh_library = ExtResource("1_mv8x7")
 cell_size = Vector3(1, 1, 1)
+script = ExtResource("2_xeiim")
 
 [node name="UI" type="HBoxContainer" parent="."]
 anchors_preset = 7

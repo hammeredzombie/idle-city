@@ -29,16 +29,7 @@ enum MESH_INDEX {
 	tile_preview,
 }
 
-const MIN_MESH_INDEX = MESH_INDEX.straight
-const MAX_MESH_INDEX = MESH_INDEX.tile
-const MIN_MESH_INDEX_STRAIGHT = MESH_INDEX.straight
-const MAX_MESH_INDEX_STRAIGHT = MESH_INDEX.end_round
-const MIN_MESH_INDEX_BEND = MESH_INDEX.bend
-const MAX_MESH_INDEX_BEND = MESH_INDEX.bend_round
-const MIN_MESH_INDEX_INTERSECTION = MESH_INDEX.intersection
-const MAX_MESH_INDEX_INTERSECTION = MESH_INDEX.t_intersection_crossing
-
-enum MESH_THUMBNAIL_INDEX {
+enum THUMBNAIL_INDEX {
 	straight,
 	straight_crossing,
 	end,
@@ -76,10 +67,14 @@ enum TILE_TYPE {
 	intersection
 }
 
-@onready var grid: GridMap = self
-@onready var camera: Camera3D = get_viewport().get_camera_3d()
-@onready var ui: Control = get_node('UI')
-# @onready var straight_thumbnail: TextureRect = ui.get_node("HBoxContainer/StraightButton/TextureRect")
+const MIN_MESH_INDEX = MESH_INDEX.straight
+const MAX_MESH_INDEX = MESH_INDEX.tile
+const MIN_MESH_INDEX_STRAIGHT = MESH_INDEX.straight
+const MAX_MESH_INDEX_STRAIGHT = MESH_INDEX.end_round
+const MIN_MESH_INDEX_BEND = MESH_INDEX.bend
+const MAX_MESH_INDEX_BEND = MESH_INDEX.bend_round
+const MIN_MESH_INDEX_INTERSECTION = MESH_INDEX.intersection
+const MAX_MESH_INDEX_INTERSECTION = MESH_INDEX.t_intersection_crossing
 
 var _is_building:bool = true
 var _is_placing:bool = false
@@ -90,11 +85,15 @@ var _target_layer_y: int = 0
 
 var _curr_cell:Vector3i = Vector3i(-1, -1, -1)
 var _curr_tile:int = MESH_INDEX.straight
-var _curr_tile_straight:int = MESH_INDEX.straight
-var _curr_tile_bend:int = MESH_INDEX.bend
-var _curr_tile_intersection:int = MESH_INDEX.intersection
-var _curr_type:int = TILE_TYPE.straight
+# var _curr_tile_straight:int = MESH_INDEX.straight
+# var _curr_tile_bend:int = MESH_INDEX.bend
+# var _curr_tile_intersection:int = MESH_INDEX.intersection
+# var _curr_type:int = TILE_TYPE.straight
 var _curr_orientation: Basis = Basis()
+
+@onready var grid: GridMap = self
+@onready var camera: Camera3D = get_viewport().get_camera_3d()
+@onready var ui: Control = get_node('UI')
 
 func _ready() -> void:
 	if grid.mesh_library == null:
@@ -285,9 +284,5 @@ func _get_tile_preview(index: int) -> int:
 # 			_curr_tile = _curr_tile_intersection
 
 func _assign_mesh_indices() -> void:
-	var lib: MeshLibrary = mesh_library
-	if lib == null:
-		return
-	for i in MIN_MESH_INDEX : MAX_MESH_INDEX + 1:
-		if lib.get_item_count() <= i or lib.get_item(i) == null:
-			push_error("MeshLibrary is missing mesh for index %d" % i)
+	var lib: MeshLibrary = grid.mesh_library
+	print(lib)
