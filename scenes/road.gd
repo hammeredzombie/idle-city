@@ -194,28 +194,28 @@ func _input(event: InputEvent) -> void:
 			return
 
 	#place tile
-	if event.is_action_pressed("mouse_left"):
+	if event.is_action_pressed("place_tile"):
 		_is_placing = true
 		_curr_cell = _get_cell_under_mouse()
 		_place_tile(_curr_cell)
-	if event.is_action_released("mouse_left"):
+	if event.is_action_released("place_tile"):
 		_is_placing = false
 
 	#remove tile
-	if event.is_action_pressed("mouse_right"):
-		_is_removing = true
-		_curr_cell = _get_cell_under_mouse()
-		_remove_tile(_curr_cell)
-	if event.is_action_released("mouse_right"):
-		_is_removing = false
+	# if event.is_action_pressed("mouse_right"):
+	# 	_is_removing = true
+	# 	_curr_cell = _get_cell_under_mouse()
+	# 	_remove_tile(_curr_cell)
+	# if event.is_action_released("mouse_right"):
+	# 	_is_removing = false
 
 	#rotate tile
-	if event.is_action_pressed("rotate_right"):
+	if event.is_action_pressed("rotate_tile"):
 		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(90))
 		_curr_cell = _get_cell_under_mouse()
 		_remove_preview(_curr_cell)
 		_preview_tile(_curr_cell)
-	if event.is_action_pressed("rotate_left"):
+	if event.is_action_pressed("rotate_tile_ccw"):
 		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(-90))
 		_curr_cell = _get_cell_under_mouse()
 		_remove_preview(_curr_cell)
