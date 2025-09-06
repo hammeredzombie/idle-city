@@ -1,5 +1,6 @@
 extends GridMap
 
+# Grid map setup
 const MESH_NAME: Dictionary = {
 	"straight": 'straight',
 	"straight_preview": 'straight_preview',
@@ -58,6 +59,7 @@ const MESH_ORDER: Array[String] = [
 	'tile_preview',
 ]
 
+# mesh indexing
 enum MESH_INDEX {
 	straight,
 	straight_preview,
@@ -87,7 +89,21 @@ enum MESH_INDEX {
 	tile_preview,
 }
 
-enum THUMBNAIL_INDEX {
+const MIN_MESH_INDEX = MESH_INDEX.straight
+const MIN_MESH_INDEX_STRAIGHT = MESH_INDEX.straight
+const MAX_MESH_INDEX_STRAIGHT = MESH_INDEX.end_round
+const MIN_MESH_INDEX_BEND = MESH_INDEX.bend
+const MAX_MESH_INDEX_BEND = MESH_INDEX.bend_round
+const MIN_MESH_INDEX_INTERSECTION = MESH_INDEX.intersection
+const MAX_MESH_INDEX_INTERSECTION = MESH_INDEX.t_intersection_crossing
+
+enum TILE_TYPE {
+	straight,
+	bend,
+	intersection
+}
+
+enum MESH_THUMBNAIL_INDEX {
 	straight,
 	straight_crossing,
 	end,
@@ -105,48 +121,46 @@ enum THUMBNAIL_INDEX {
 
 const thumbnails = [
 	preload("res://assets/tiles/thumbnails/straight.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/straight-crossing.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/end.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/end-round.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/bend.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/bend-round.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/intersection.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/intersection-crossing.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/t-intersection.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/t-intersection-crossing.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/driveway-double.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/driveway-single.png"),
+	null,
 	preload("res://assets/tiles/thumbnails/tile.png"),
+	null,
 ]
-
-enum TILE_TYPE {
-	straight,
-	bend,
-	intersection
-}
-
-const MIN_MESH_INDEX = MESH_INDEX.straight
-const MAX_MESH_INDEX = MESH_INDEX.tile
-const MIN_MESH_INDEX_STRAIGHT = MESH_INDEX.straight
-const MAX_MESH_INDEX_STRAIGHT = MESH_INDEX.end_round
-const MIN_MESH_INDEX_BEND = MESH_INDEX.bend
-const MAX_MESH_INDEX_BEND = MESH_INDEX.bend_round
-const MIN_MESH_INDEX_INTERSECTION = MESH_INDEX.intersection
-const MAX_MESH_INDEX_INTERSECTION = MESH_INDEX.t_intersection_crossing
 
 var _is_building:bool = true
 var _is_placing:bool = false
 var _is_removing:bool = false
-var _preview_active: bool = false
+var _preview_active: bool = _is_building
 var _preview_cell: Vector3i
 var _target_layer_y: int = 0
 
 var _curr_cell:Vector3i = Vector3i(-1, -1, -1)
 var _curr_tile:int = MESH_INDEX.straight
-# var _curr_tile_straight:int = MESH_INDEX.straight
-# var _curr_tile_bend:int = MESH_INDEX.bend
-# var _curr_tile_intersection:int = MESH_INDEX.intersection
-# var _curr_type:int = TILE_TYPE.straight
+var _curr_tile_straight:int = MESH_INDEX.straight
+var _curr_tile_bend:int = MESH_INDEX.bend
+var _curr_tile_intersection:int = MESH_INDEX.intersection
+var _curr_type:int = TILE_TYPE.straight
 var _curr_orientation: Basis = Basis()
 
 var meshes: Array[int]
@@ -154,6 +168,9 @@ var meshes: Array[int]
 @onready var grid: GridMap = self
 @onready var camera: Camera3D = get_viewport().get_camera_3d()
 @onready var ui: Control = get_node('UI')
+@onready var straight_thumbnail: TextureButton = ui.get_node('straight')
+@onready var bend_thumbnail: TextureButton = ui.get_node('bend')
+@onready var intersection_thumbnail: TextureButton = ui.get_node('intersection')
 
 func _ready() -> void:
 	if grid.mesh_library == null:
@@ -163,15 +180,18 @@ func _ready() -> void:
 		return
 	_assign_mesh_indices()
 	ui.visible = _is_building
+	_switch_type() # highlight starting build type
 
 func _input(event: InputEvent) -> void:
 	#enable building
 	if event.is_action_pressed("road_builder"):
 		_is_building = !_is_building
 		ui.visible = _is_building
-
-	if not _is_building:
-		return
+		if not _is_building:
+			_curr_cell = _get_cell_under_mouse()
+			_remove_preview(_curr_cell)
+			_preview_active = false
+			return
 
 	#place tile
 	if event.is_action_pressed("mouse_left"):
@@ -203,14 +223,11 @@ func _input(event: InputEvent) -> void:
 	
 	#change tile type
 	if event.is_action_pressed("build_straight"):
-		# _choose_or_cycle_type(TILE_TYPE.straight)
-		pass
+		_choose_or_cycle_type(TILE_TYPE.straight)
 	elif event.is_action_pressed("build_bend"):
-		# _choose_or_cycle_type(TILE_TYPE.bend)
-		pass
+		_choose_or_cycle_type(TILE_TYPE.bend)
 	elif event.is_action_pressed("build_intersection"):
-		# _choose_or_cycle_type(TILE_TYPE.intersection)
-		pass
+		_choose_or_cycle_type(TILE_TYPE.intersection)
 
 func _process(_delta: float) -> void:
 	if not _is_building:
@@ -222,11 +239,11 @@ func _process(_delta: float) -> void:
 	if _is_building and not (_is_placing or _is_removing):
 		var next_cell: Vector3i = _get_cell_under_mouse()
 
+
 		# if we moved to a different cell, remove the old preview
 		if _preview_active and next_cell != _preview_cell:
 			_remove_preview(_preview_cell)
 			_preview_active = false
-
 		# show preview on the current hover cell (first time or moved)
 		if not _preview_active or next_cell != _preview_cell:
 			_preview_tile(next_cell)
@@ -287,66 +304,72 @@ func _remove_tile(cell: Vector3i) -> void:
 	set_cell_item(cell, -1, 0)
 
 func _preview_tile(cell: Vector3i) -> void:
-	print(_curr_orientation)
 	var item_index = get_cell_item(cell)
 	if item_index == -1:
 		set_cell_item(cell, meshes[_get_tile_preview_index(_curr_tile)], get_orthogonal_index_from_basis(_curr_orientation))
 
 func _remove_preview(cell: Vector3i) -> void:
 	# only remove if a preview tile
-	if get_cell_item(cell) % 2 == 1: # preview tiles are odd indexed
+	var meshLibraryIndex = get_cell_item(cell)
+	var previewIndex = meshes.find(meshLibraryIndex)
+	if previewIndex % 2 == 1: # preview tiles are odd indexed
 		set_cell_item(cell, -1, 0)
 
 func _get_tile_preview_index(index: int) -> int:
 	var preview_index = index + 1
 	return preview_index
 
-
 #UI thumbnails
-# func _choose_or_cycle_type(type:TILE_TYPE):
-# 	if type == _curr_type:
-# 		match type:
-# 			TILE_TYPE.straight:
-# 				pass
-# 			TILE_TYPE.bend:
-# 				pass
-# 			TILE_TYPE.intersection:
-# 				pass
-# 	else:
-# 		_curr_type = type
-# 		match type:
-# 			TILE_TYPE.straight:
-# 				_curr_tile = _curr_tile_straight
-# 			TILE_TYPE.bend:
-# 				_curr_tile = _curr_tile_bend
-# 			TILE_TYPE.intersection:
-# 				_curr_tile = _curr_tile_intersection
+func _choose_or_cycle_type(type:TILE_TYPE):
+	if type == _curr_type:
+		_cycle_tile()
+	else:
+		_curr_type = type
+		_switch_type()
+	_curr_cell = _get_cell_under_mouse()
+	_remove_preview(_curr_cell)	
+	_preview_tile(_curr_cell)
 
-# func _change_thumbnail(_index: MESH_THUMBNAIL_INDEX):
-# 	pass
+func _switch_type():
+	match _curr_type:
+		TILE_TYPE.straight:
+			_curr_tile = _curr_tile_straight
+			straight_thumbnail.self_modulate = Color(2.0, 2.0, 2.0)
+			bend_thumbnail.self_modulate = Color(1.0, 1.0, 1.0)
+			intersection_thumbnail.self_modulate = Color(1.0, 1.0, 1.0)
+		TILE_TYPE.bend:
+			_curr_tile = _curr_tile_bend
+			straight_thumbnail.self_modulate = Color(1.0, 1.0, 1.0)
+			bend_thumbnail.self_modulate = Color(2.0, 2.0, 2.0)
+			intersection_thumbnail.self_modulate = Color(1.0, 1.0, 1.0)
+		TILE_TYPE.intersection:
+			_curr_tile = _curr_tile_intersection
+			straight_thumbnail.self_modulate = Color(1.0, 1.0, 1.0)
+			bend_thumbnail.self_modulate = Color(1.0, 1.0, 1.0)
+			intersection_thumbnail.self_modulate = Color(2.0, 2.0, 2.0)
 
-# func _get_tile_thumbnail(index: MESH_THUMBNAIL_INDEX) -> int:
-# 	return index
+func _cycle_tile():
+	match _curr_type:
+		TILE_TYPE.straight:
+			_curr_tile_straight += 2
+			if _curr_tile_straight > MAX_MESH_INDEX_STRAIGHT:
+				_curr_tile_straight = MESH_INDEX.straight
+			_curr_tile = _curr_tile_straight
+			straight_thumbnail.texture_normal = thumbnails[_curr_tile]
+		TILE_TYPE.bend:
+			_curr_tile_bend += 2
+			if _curr_tile_bend > MAX_MESH_INDEX_BEND:
+				_curr_tile_bend = MESH_INDEX.bend
+			_curr_tile = _curr_tile_bend
+			bend_thumbnail.texture_normal = thumbnails[_curr_tile]
+		TILE_TYPE.intersection:
+			_curr_tile_intersection += 2
+			if _curr_tile_intersection > MAX_MESH_INDEX_INTERSECTION:
+				_curr_tile_intersection = MESH_INDEX.intersection
+			_curr_tile = _curr_tile_intersection
+			intersection_thumbnail.texture_normal = thumbnails[_curr_tile]
 
-# func _cycle_tile(type:TILE_TYPE):
-# 	match type:
-# 		TILE_TYPE.straight:
-# 			_curr_tile_straight += 2
-# 			if _curr_tile_straight > MAX_MESH_INDEX_STRAIGHT:
-# 				_curr_tile_straight = MESH_INDEX.straight
-# 			_curr_tile = _curr_tile_straight
-# 			straight_thumbnail.texture = thumbnails[_get_tile_thumbnail(MESH_THUMBNAIL_INDEX.straight)]
-# 		TILE_TYPE.bend:
-# 			_curr_tile_bend += 2
-# 			if _curr_tile_bend > MAX_MESH_INDEX_BEND:
-# 				_curr_tile_bend = MESH_INDEX.bend
-# 			_curr_tile = _curr_tile_bend
-# 		TILE_TYPE.intersection:
-# 			_curr_tile_intersection += 2
-# 			if _curr_tile_intersection > MAX_MESH_INDEX_INTERSECTION:
-# 				_curr_tile_intersection = MESH_INDEX.intersection
-# 			_curr_tile = _curr_tile_intersection
-
+#
 func _assign_mesh_indices() -> void:
 	var lib: MeshLibrary = grid.mesh_library
 	for mesh in MESH_ORDER:
