@@ -159,9 +159,7 @@ var _is_placing:bool = false
 var _is_deleting_mode:bool = false
 var _is_deleting:bool = false
 var _preview_active: bool = false
-var _delete_active: bool = false
 var _preview_cell: Vector3i
-var _delete_cell: Vector3i
 var _tile_to_delete: Array = [-1,-1] # [item index, item orientation]
 var _target_layer_y: int = 0
 
@@ -178,6 +176,7 @@ var meshes: Array[int]
 @onready var grid: GridMap = self
 @onready var camera: Camera3D = get_viewport().get_camera_3d()
 @onready var ui: Control = get_node('UI')
+@onready var bulldozer: Control = get_node('Bulldozer')
 @onready var straight_thumbnail: TextureButton = ui.get_node('straight')
 @onready var bend_thumbnail: TextureButton = ui.get_node('bend')
 @onready var intersection_thumbnail: TextureButton = ui.get_node('intersection')
@@ -189,7 +188,8 @@ func _ready() -> void:
 		set_process_input(false)
 		return
 	_assign_mesh_indices()
-	ui.visible = _is_building
+	ui.visible = false
+	bulldozer.visible = false
 	_switch_type() # highlight starting build type
 
 func _input(event: InputEvent) -> void:
@@ -198,21 +198,26 @@ func _input(event: InputEvent) -> void:
 		_is_building = !_is_building
 		ui.visible = _is_building
 		_is_deleting_mode = false
-		_curr_cell = _get_cell_under_mouse()
-		if not _is_building:
-			_remove_preview(_curr_cell)
-			_preview_active = false
-			return
+		bulldozer.visible = false
+		if _preview_active:
+			_remove_preview(_preview_cell)
+		_preview_active = false
+		_tile_to_delete = [-1, -1]
+		# if not _is_building:
+		# 	_remove_preview(_curr_cell)
+		# 	_preview_active = false
+		# 	return
 
 	if event.is_action_pressed("road_delete"):
 		_is_deleting_mode = !_is_deleting_mode
-		ui.visible = false
+		bulldozer.visible = _is_deleting_mode
 		_is_building = false
+		ui.visible = false
 		_curr_cell = _get_cell_under_mouse()
-		if not _is_deleting_mode:
-			_remove_preview(_curr_cell)
-			_preview_active = false
-			return
+		if _preview_active:
+			_remove_preview(_preview_cell)
+		_preview_active = false
+		_tile_to_delete = [-1, -1]
 
 	if _is_building:
 		#place tile
