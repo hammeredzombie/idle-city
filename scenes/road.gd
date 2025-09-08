@@ -150,7 +150,7 @@ const thumbnails = [
 
 var _is_building:bool = true
 var _is_placing:bool = false
-var _is_removing:bool = false
+var _is_deleting_mode:bool = false
 var _preview_active: bool = _is_building
 var _preview_cell: Vector3i
 var _target_layer_y: int = 0
@@ -202,12 +202,12 @@ func _input(event: InputEvent) -> void:
 		_is_placing = false
 
 	#remove tile
-	# if event.is_action_pressed("mouse_right"):
-	# 	_is_removing = true
+	# if event.is_action_pressed("undo_delete"):
+	# 	_is_deleting_mode = true
 	# 	_curr_cell = _get_cell_under_mouse()
-	# 	_remove_tile(_curr_cell)
-	# if event.is_action_released("mouse_right"):
-	# 	_is_removing = false
+	# 	_delete_tile(_curr_cell)
+	# if event.is_action_released("undo_delete"):
+	# 	_is_deleting_mode = false
 
 	#rotate tile
 	if event.is_action_pressed("rotate_tile"):
@@ -236,7 +236,7 @@ func _process(_delta: float) -> void:
 			_preview_active = false
 		return
 	# Preview tile
-	if _is_building and not (_is_placing or _is_removing):
+	if _is_building and not (_is_placing or _is_deleting_mode):
 		var next_cell: Vector3i = _get_cell_under_mouse()
 
 
@@ -251,7 +251,7 @@ func _process(_delta: float) -> void:
 			_preview_active = true
 
 	# Drag to place / remove
-	if _is_building and (_is_placing or _is_removing):
+	if _is_building and (_is_placing or _is_deleting_mode):
 		var next_cell: Vector3i = _get_cell_under_mouse()
 
 		# clear any hover preview while dragging
@@ -264,8 +264,8 @@ func _process(_delta: float) -> void:
 			_curr_cell = next_cell
 			if _is_placing:
 				_place_tile(_curr_cell)
-			if _is_removing:
-				_remove_tile(_curr_cell)
+			if _is_deleting_mode:
+				_delete_tile(_curr_cell)
 
 func _get_cell_under_mouse() -> Vector3i:
 	if camera == null:
@@ -300,7 +300,7 @@ func _get_cell_under_mouse() -> Vector3i:
 func _place_tile(cell: Vector3i) -> void:
 	set_cell_item(cell, meshes[_curr_tile], get_orthogonal_index_from_basis(_curr_orientation))
 
-func _remove_tile(cell: Vector3i) -> void:
+func _delete_tile(cell: Vector3i) -> void:
 	set_cell_item(cell, -1, 0)
 
 func _preview_tile(cell: Vector3i) -> void:
