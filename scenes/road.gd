@@ -198,8 +198,8 @@ func _input(event: InputEvent) -> void:
 		_is_building = !_is_building
 		ui.visible = _is_building
 		_is_deleting_mode = false
+		_curr_cell = _get_cell_under_mouse()
 		if not _is_building:
-			_curr_cell = _get_cell_under_mouse()
 			_remove_preview(_curr_cell)
 			_preview_active = false
 			return
@@ -208,10 +208,10 @@ func _input(event: InputEvent) -> void:
 		_is_deleting_mode = !_is_deleting_mode
 		ui.visible = false
 		_is_building = false
+		_curr_cell = _get_cell_under_mouse()
 		if not _is_deleting_mode:
-			_curr_cell = _get_cell_under_mouse()
 			_remove_preview(_curr_cell)
-			_delete_active = false
+			_preview_active = false
 			return
 
 	if _is_building:
@@ -251,59 +251,62 @@ func _input(event: InputEvent) -> void:
 			_is_deleting = false	
 
 func _process(_delta: float) -> void:
-	if not _is_building:
+	# If neither mode is active, clear any leftover preview and bail.
+	if not _is_building and not _is_deleting_mode:
 		if _preview_active:
 			_remove_preview(_preview_cell)
 			_preview_active = false
 		return
-	# Preview build tile
-	if _is_building and not _is_placing:
-		var next_cell: Vector3i = _get_cell_under_mouse()
-		# if we moved to a different cell, remove the old preview
-		if _preview_active and next_cell != _preview_cell:
-			_remove_preview(_preview_cell)
-			_preview_active = false
-		# show preview on the current hover cell (first time or moved)
-		if not _preview_active or next_cell != _preview_cell:
-			_preview_tile(next_cell)
-			_preview_cell = next_cell
-			_preview_active = true
-	# Drag to place
-	if _is_building and _is_placing:
-		var next_cell: Vector3i = _get_cell_under_mouse()
-		# clear any hover preview while dragging
-		if _preview_active:
-			_remove_preview(_preview_cell)
-			_preview_active = false
-		# act only when the cell changes
-		if next_cell != _curr_cell:
-			_curr_cell = next_cell
-			if _is_placing:
+
+	# =========================
+	# Build mode (hover + drag)
+	# =========================
+	if _is_building:
+		# Hover preview (only when not dragging)
+		if not _is_placing:
+			var next_cell: Vector3i = _get_cell_under_mouse()
+			if _preview_active and next_cell != _preview_cell:
+				_remove_preview(_preview_cell)
+				_preview_active = false
+			if not _preview_active or next_cell != _preview_cell:
+				_preview_tile(next_cell)
+				_preview_cell = next_cell
+				_preview_active = true
+		# Drag place
+		if _is_placing:
+			var next_cell: Vector3i = _get_cell_under_mouse()
+			if _preview_active:
+				_remove_preview(_preview_cell)
+				_preview_active = false
+			if next_cell != _curr_cell:
+				_curr_cell = next_cell
 				_place_tile(_curr_cell)
-	# Preview delete tile
-	if _is_deleting_mode and not _is_deleting:
-		var next_cell: Vector3i = _get_cell_under_mouse()
-		# if we moved to a different cell, remove the old preview
-		if _preview_active and next_cell != _preview_cell:
-			_remove_preview(_preview_cell)
-			_preview_active = false
-		# show preview on the current hover cell (first time or moved)
-		if not _preview_active or next_cell != _preview_cell:
-			_preview_tile(next_cell)
-			_preview_cell = next_cell
-			_preview_active = true
-	# Drag to delete
-	if _is_deleting_mode and _is_deleting:
-		var next_cell: Vector3i = _get_cell_under_mouse()
-		# clear any hover preview while dragging
-		if _preview_active:
-			_remove_preview(_preview_cell)
-			_preview_active = false
-		# act only when the cell changes
-		if next_cell != _curr_cell:
-			_curr_cell = next_cell
-			if _is_deleting:
+		return
+
+	# ==========================
+	# Delete mode (hover + drag)
+	# ==========================
+	if _is_deleting_mode:
+		# Hover delete preview (only when not dragging)
+		if not _is_deleting:
+			var next_cell: Vector3i = _get_cell_under_mouse()
+			if _preview_active and next_cell != _preview_cell:
+				_remove_preview(_preview_cell)
+				_preview_active = false
+			if not _preview_active or next_cell != _preview_cell:
+				_preview_tile(next_cell) # will place delete preview if something exists there
+				_preview_cell = next_cell
+				_preview_active = true
+		# Drag delete
+		if _is_deleting:
+			var next_cell: Vector3i = _get_cell_under_mouse()
+			if _preview_active:
+				_remove_preview(_preview_cell)
+				_preview_active = false
+			if next_cell != _curr_cell:
+				_curr_cell = next_cell
 				_delete_tile(_curr_cell)
+
 
 func _get_cell_under_mouse() -> Vector3i:
 	if camera == null:
@@ -343,22 +346,29 @@ func _delete_tile(cell: Vector3i) -> void:
 
 func _preview_tile(cell: Vector3i) -> void:
 	var tile_item_index = get_cell_item(cell)
-	if _is_building and tile_item_index == -1: # only preview on empty tiles
+	var tile_item_orientation = get_cell_item_orientation(cell)
+	_tile_to_delete[0] = tile_item_index
+	_tile_to_delete[1] = tile_item_orientation
+	if _is_building and tile_item_index == -1: # preview on empty tiles
 		set_cell_item(cell, meshes[_get_tile_preview_index(_curr_tile)], get_orthogonal_index_from_basis(_curr_orientation))
-	if _is_deleting_mode:
-		_tile_to_delete[0] = tile_item_index
-		_tile_to_delete[1] = get_cell_item_orientation(cell)
+	if _is_building and tile_item_index != meshes[_curr_tile]: # preview on different tiles
+		set_cell_item(cell, meshes[_get_tile_preview_index(_curr_tile)], get_orthogonal_index_from_basis(_curr_orientation))
+	if _is_building and tile_item_index == meshes[_curr_tile] and tile_item_orientation != get_orthogonal_index_from_basis(_curr_orientation): # preview on different orientation
+		set_cell_item(cell, meshes[_get_tile_preview_index(_curr_tile)], get_orthogonal_index_from_basis(_curr_orientation))
+
+
+	if _is_deleting_mode and tile_item_index != -1:
 		set_cell_item(cell, meshes[MESH_INDEX.tile_delete_preview])
 
 func _remove_preview(cell: Vector3i) -> void:
-	# only remove if a preview tile
 	var meshLibraryIndex = get_cell_item(cell)
+	if meshLibraryIndex == -1:
+		return
 	var previewIndex = meshes.find(meshLibraryIndex)
-	# remove build preview
-	if previewIndex % 2 == 1: # preview tiles are odd indexed
-		set_cell_item(cell, -1, 0)
-	# remove delete preview
-	if previewIndex == MESH_INDEX.tile_delete_preview:
+	if previewIndex == -1:
+		return
+	# Remove odd index preview tiles or delete preview
+	if previewIndex % 2 == 1 or previewIndex == MESH_INDEX.tile_delete_preview  : # preview tiles are odd indexed
 		set_cell_item(cell, _tile_to_delete[0], _tile_to_delete[1])
 
 func _get_tile_preview_index(index: int) -> int:
@@ -427,4 +437,3 @@ func _assign_mesh_indices() -> void:
 			set_process_input(false)
 			return
 		meshes.push_back(meshIndex)
-	print(meshes)
