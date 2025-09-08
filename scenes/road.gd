@@ -28,6 +28,8 @@ const MESH_NAME: Dictionary = {
 	"driveway_single_preview": 'driveway-single_preview',
 	"tile": 'tile',
 	"tile_preview": 'tile_preview',
+	"tile_delete": 'tile-delete',
+	"tile_delete_preview": 'tile-delete_preview'
 }
 
 const MESH_ORDER: Array[String] = [
@@ -57,6 +59,8 @@ const MESH_ORDER: Array[String] = [
 	'driveway_single_preview',
 	'tile',
 	'tile_preview',
+	'tile_delete',
+	'tile_delete_preview'
 ]
 
 # mesh indexing
@@ -87,6 +91,8 @@ enum MESH_INDEX {
 	driveway_single_preview,
 	tile,
 	tile_preview,
+	tile_delete,
+	tile_delete_preview
 }
 
 const MIN_MESH_INDEX = MESH_INDEX.straight
@@ -148,11 +154,15 @@ const thumbnails = [
 	null,
 ]
 
-var _is_building:bool = true
+var _is_building:bool = false
 var _is_placing:bool = false
 var _is_deleting_mode:bool = false
-var _preview_active: bool = _is_building
+var _is_deleting:bool = false
+var _preview_active: bool = false
+var _delete_active: bool = false
 var _preview_cell: Vector3i
+var _delete_cell: Vector3i
+var _tile_to_delete: Array = [-1,-1] # [item index, item orientation]
 var _target_layer_y: int = 0
 
 var _curr_cell:Vector3i = Vector3i(-1, -1, -1)
@@ -184,50 +194,61 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	#enable building
-	if event.is_action_pressed("road_builder"):
+	if event.is_action_pressed("road_build"):
 		_is_building = !_is_building
 		ui.visible = _is_building
+		_is_deleting_mode = false
 		if not _is_building:
 			_curr_cell = _get_cell_under_mouse()
 			_remove_preview(_curr_cell)
 			_preview_active = false
 			return
 
-	#place tile
-	if event.is_action_pressed("place_tile"):
-		_is_placing = true
-		_curr_cell = _get_cell_under_mouse()
-		_place_tile(_curr_cell)
-	if event.is_action_released("place_tile"):
-		_is_placing = false
+	if event.is_action_pressed("road_delete"):
+		_is_deleting_mode = !_is_deleting_mode
+		ui.visible = false
+		_is_building = false
+		if not _is_deleting_mode:
+			_curr_cell = _get_cell_under_mouse()
+			_remove_preview(_curr_cell)
+			_delete_active = false
+			return
 
-	#remove tile
-	# if event.is_action_pressed("undo_delete"):
-	# 	_is_deleting_mode = true
-	# 	_curr_cell = _get_cell_under_mouse()
-	# 	_delete_tile(_curr_cell)
-	# if event.is_action_released("undo_delete"):
-	# 	_is_deleting_mode = false
+	if _is_building:
+		#place tile
+		if event.is_action_pressed("place_tile"):
+			_is_placing = true
+			_curr_cell = _get_cell_under_mouse()
+			_place_tile(_curr_cell)
+		if event.is_action_released("place_tile"):
+			_is_placing = false
+		#rotate tile
+		if event.is_action_pressed("rotate_tile"):
+			_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(90))
+			_curr_cell = _get_cell_under_mouse()
+			_remove_preview(_curr_cell)
+			_preview_tile(_curr_cell)
+		if event.is_action_pressed("rotate_tile_ccw"):
+			_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(-90))
+			_curr_cell = _get_cell_under_mouse()
+			_remove_preview(_curr_cell)
+			_preview_tile(_curr_cell)
+		#change tile type
+		if event.is_action_pressed("build_straight"):
+			_choose_or_cycle_type(TILE_TYPE.straight)
+		elif event.is_action_pressed("build_bend"):
+			_choose_or_cycle_type(TILE_TYPE.bend)
+		elif event.is_action_pressed("build_intersection"):
+			_choose_or_cycle_type(TILE_TYPE.intersection)
 
-	#rotate tile
-	if event.is_action_pressed("rotate_tile"):
-		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(90))
-		_curr_cell = _get_cell_under_mouse()
-		_remove_preview(_curr_cell)
-		_preview_tile(_curr_cell)
-	if event.is_action_pressed("rotate_tile_ccw"):
-		_curr_orientation = _curr_orientation.rotated(Vector3.UP, deg_to_rad(-90))
-		_curr_cell = _get_cell_under_mouse()
-		_remove_preview(_curr_cell)
-		_preview_tile(_curr_cell)
-	
-	#change tile type
-	if event.is_action_pressed("build_straight"):
-		_choose_or_cycle_type(TILE_TYPE.straight)
-	elif event.is_action_pressed("build_bend"):
-		_choose_or_cycle_type(TILE_TYPE.bend)
-	elif event.is_action_pressed("build_intersection"):
-		_choose_or_cycle_type(TILE_TYPE.intersection)
+	if _is_deleting_mode:
+		#delete tile
+		if event.is_action_pressed("delete_tile"):
+			_is_deleting = true
+			_curr_cell = _get_cell_under_mouse()
+			_delete_tile(_curr_cell)
+		if event.is_action_released("delete_tile"):
+			_is_deleting = false	
 
 func _process(_delta: float) -> void:
 	if not _is_building:
@@ -235,11 +256,9 @@ func _process(_delta: float) -> void:
 			_remove_preview(_preview_cell)
 			_preview_active = false
 		return
-	# Preview tile
-	if _is_building and not (_is_placing or _is_deleting_mode):
+	# Preview build tile
+	if _is_building and not _is_placing:
 		var next_cell: Vector3i = _get_cell_under_mouse()
-
-
 		# if we moved to a different cell, remove the old preview
 		if _preview_active and next_cell != _preview_cell:
 			_remove_preview(_preview_cell)
@@ -249,22 +268,41 @@ func _process(_delta: float) -> void:
 			_preview_tile(next_cell)
 			_preview_cell = next_cell
 			_preview_active = true
-
-	# Drag to place / remove
-	if _is_building and (_is_placing or _is_deleting_mode):
+	# Drag to place
+	if _is_building and _is_placing:
 		var next_cell: Vector3i = _get_cell_under_mouse()
-
 		# clear any hover preview while dragging
 		if _preview_active:
 			_remove_preview(_preview_cell)
 			_preview_active = false
-
 		# act only when the cell changes
 		if next_cell != _curr_cell:
 			_curr_cell = next_cell
 			if _is_placing:
 				_place_tile(_curr_cell)
-			if _is_deleting_mode:
+	# Preview delete tile
+	if _is_deleting_mode and not _is_deleting:
+		var next_cell: Vector3i = _get_cell_under_mouse()
+		# if we moved to a different cell, remove the old preview
+		if _preview_active and next_cell != _preview_cell:
+			_remove_preview(_preview_cell)
+			_preview_active = false
+		# show preview on the current hover cell (first time or moved)
+		if not _preview_active or next_cell != _preview_cell:
+			_preview_tile(next_cell)
+			_preview_cell = next_cell
+			_preview_active = true
+	# Drag to delete
+	if _is_deleting_mode and _is_deleting:
+		var next_cell: Vector3i = _get_cell_under_mouse()
+		# clear any hover preview while dragging
+		if _preview_active:
+			_remove_preview(_preview_cell)
+			_preview_active = false
+		# act only when the cell changes
+		if next_cell != _curr_cell:
+			_curr_cell = next_cell
+			if _is_deleting:
 				_delete_tile(_curr_cell)
 
 func _get_cell_under_mouse() -> Vector3i:
@@ -304,16 +342,24 @@ func _delete_tile(cell: Vector3i) -> void:
 	set_cell_item(cell, -1, 0)
 
 func _preview_tile(cell: Vector3i) -> void:
-	var item_index = get_cell_item(cell)
-	if item_index == -1:
+	var tile_item_index = get_cell_item(cell)
+	if _is_building and tile_item_index == -1: # only preview on empty tiles
 		set_cell_item(cell, meshes[_get_tile_preview_index(_curr_tile)], get_orthogonal_index_from_basis(_curr_orientation))
+	if _is_deleting_mode:
+		_tile_to_delete[0] = tile_item_index
+		_tile_to_delete[1] = get_cell_item_orientation(cell)
+		set_cell_item(cell, meshes[MESH_INDEX.tile_delete_preview])
 
 func _remove_preview(cell: Vector3i) -> void:
 	# only remove if a preview tile
 	var meshLibraryIndex = get_cell_item(cell)
 	var previewIndex = meshes.find(meshLibraryIndex)
+	# remove build preview
 	if previewIndex % 2 == 1: # preview tiles are odd indexed
 		set_cell_item(cell, -1, 0)
+	# remove delete preview
+	if previewIndex == MESH_INDEX.tile_delete_preview:
+		set_cell_item(cell, _tile_to_delete[0], _tile_to_delete[1])
 
 func _get_tile_preview_index(index: int) -> int:
 	var preview_index = index + 1
@@ -381,3 +427,4 @@ func _assign_mesh_indices() -> void:
 			set_process_input(false)
 			return
 		meshes.push_back(meshIndex)
+	print(meshes)
