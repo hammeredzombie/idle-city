@@ -5,7 +5,7 @@ const max_grid_count: int = 5
 
 @onready var Grid: GridMap = self
 
-enum MESH_INDEX { CENTER, EDGE, OUT_CORNER, IN_CORNER }
+enum MESH_INDEX { CENTER, EDGE, CORNER, GRID_OVERLAY }
 enum CARDINAL_DIR { NORTH, EAST, SOUTH, WEST, NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST }
 
 # North (default, facing -Z)
@@ -54,13 +54,13 @@ func _build_islands() -> void:
 			match direction:
 				# corners
 				CARDINAL_DIR.NORTH_WEST:
-					Grid.set_cell_item(cell, MESH_INDEX.OUT_CORNER, west_index)
+					Grid.set_cell_item(cell, MESH_INDEX.CORNER, west_index)
 				CARDINAL_DIR.NORTH_EAST:
-					Grid.set_cell_item(cell, MESH_INDEX.OUT_CORNER, north_index)
+					Grid.set_cell_item(cell, MESH_INDEX.CORNER, north_index)
 				CARDINAL_DIR.SOUTH_EAST:
-					Grid.set_cell_item(cell, MESH_INDEX.OUT_CORNER, east_index)
+					Grid.set_cell_item(cell, MESH_INDEX.CORNER, east_index)
 				CARDINAL_DIR.SOUTH_WEST:
-					Grid.set_cell_item(cell, MESH_INDEX.OUT_CORNER, south_index)
+					Grid.set_cell_item(cell, MESH_INDEX.CORNER, south_index)
 				# edges (non-corner)
 				CARDINAL_DIR.NORTH:
 					Grid.set_cell_item(cell, MESH_INDEX.EDGE, north_index)
@@ -73,4 +73,6 @@ func _build_islands() -> void:
 				# interior
 				_:
 					Grid.set_cell_item(cell, MESH_INDEX.CENTER)
+					  # raise the center mesh
+					Grid.set_cell_item(Vector3i(x, 1, z), MESH_INDEX.GRID_OVERLAY)
 				

@@ -15,7 +15,7 @@ const _max_camera_pan: float = 50.0
 const _min_camera_height: float = 3.0
 const _max_camera_height: float = 100.0
 const _min_pitch_deg: float = -89.0 # 89 to prevent gimbal lock
-const _max_pitch_deg: float = -45.0
+const _max_pitch_deg: float = -10.0
 
 # variables
 var camera_x: float

@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://b520ju3fr6gcc"]
+[gd_scene load_steps=9 format=3 uid="uid://b520ju3fr6gcc"]
 
 [ext_resource type="Script" uid="uid://d3d2torvxohp" path="res://scenes/world.gd" id="1_rwgxs"]
 [ext_resource type="PackedScene" uid="uid://c8ht2n0hhlonv" path="res://scenes/environment/sea.tscn" id="3_4wyf3"]
 [ext_resource type="Script" uid="uid://jp2mpf2cjxx1" path="res://scenes/camera.gd" id="4_71j4m"]
-[ext_resource type="PackedScene" uid="uid://dsfx503gd3x3y" path="res://scenes/island.tscn" id="4_k0juu"]
+[ext_resource type="PackedScene" uid="uid://oogv54owp5ht" path="res://scenes/island.tscn" id="4_k0juu"]
+[ext_resource type="PackedScene" uid="uid://ctxqxtqrxcpru" path="res://scenes/road.tscn" id="5_qfnet"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_71j4m"]
 
@@ -22,6 +23,8 @@ transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 
 far = 500.0
 script = ExtResource("4_71j4m")
 
+[node name="PointerRay" type="RayCast3D" parent="Camera"]
+
 [node name="Sea" parent="." instance=ExtResource("3_4wyf3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.75, 0)
 
@@ -32,3 +35,11 @@ transform = Transform3D(1, 0, 0, 0, 0.323917, 0.946085, 0, -0.946085, 0.323917, 
 environment = SubResource("Environment_71j4m")
 
 [node name="Island" parent="." instance=ExtResource("4_k0juu")]
+metadata/_editor_floor_ = Vector3(0, 1, 0)
+
+[node name="Road" parent="." instance=ExtResource("5_qfnet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.53, 0.5)
+data = {
+"cells": PackedInt32Array(32, 65484, 1441801)
+}
+metadata/_editor_floor_ = Vector3(0, 0, 0)
