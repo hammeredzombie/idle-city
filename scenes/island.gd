@@ -1,6 +1,9 @@
 extends GridMap
 class_name Island
 
+@export var starting_point: Vector3i
+@export var dimensions: Array
+
 const max_grid_count: int = 5
 
 @onready var Grid: GridMap = self
@@ -17,8 +20,10 @@ const basis_south = Basis(Vector3.UP, deg_to_rad(180))
 # West (270° yaw, facing -X)
 const basis_west = Basis(Vector3.UP, deg_to_rad(270))
 
+
 func _ready() -> void:
 	_build_islands()
+	Global.is_editing.connect(_on_is_editing)
 
 func _build_islands() -> void:
 	var north_index: int = Grid.get_orthogonal_index_from_basis(basis_north)
@@ -73,6 +78,19 @@ func _build_islands() -> void:
 				# interior
 				_:
 					Grid.set_cell_item(cell, MESH_INDEX.CENTER)
-					  # raise the center mesh
-					Grid.set_cell_item(Vector3i(x, 1, z), MESH_INDEX.GRID_OVERLAY)
-				
+
+func _on_is_editing(is_editing):
+	if is_editing:
+		_show_overlay()
+	else:
+		_hide_overlay()
+
+func _show_overlay():
+	for x in range(-max_grid_count, max_grid_count):
+		for z in range(-max_grid_count, max_grid_count):
+			Grid.set_cell_item(Vector3i(x, 1, z), MESH_INDEX.GRID_OVERLAY)
+
+func _hide_overlay():
+	for x in range(-max_grid_count, max_grid_count):
+		for z in range(-max_grid_count, max_grid_count):
+			Grid.set_cell_item(Vector3i(x, 1, z), -1)

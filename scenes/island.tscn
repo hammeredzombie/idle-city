@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://oogv54owp5ht"]
 
 [ext_resource type="MeshLibrary" uid="uid://cwuhipwqysw0" path="res://assets/tiles/island-tiles.tres" id="1_2v8eh"]
-[ext_resource type="Script" path="res://scenes/island.gd" id="2_g61je"]
+[ext_resource type="Script" uid="uid://bumdd8er3vbmf" path="res://scenes/island.gd" id="2_g61je"]
 
 [node name="Island" type="GridMap"]
 mesh_library = ExtResource("1_2v8eh")

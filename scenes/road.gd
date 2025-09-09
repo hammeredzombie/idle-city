@@ -203,10 +203,7 @@ func _input(event: InputEvent) -> void:
 			_remove_preview(_preview_cell)
 		_preview_active = false
 		_tile_to_delete = [-1, -1]
-		# if not _is_building:
-		# 	_remove_preview(_curr_cell)
-		# 	_preview_active = false
-		# 	return
+		Global.is_editing.emit(_is_building)
 
 	if event.is_action_pressed("road_delete"):
 		_is_deleting_mode = !_is_deleting_mode
@@ -218,6 +215,7 @@ func _input(event: InputEvent) -> void:
 			_remove_preview(_preview_cell)
 		_preview_active = false
 		_tile_to_delete = [-1, -1]
+		Global.is_editing.emit(_is_deleting_mode)
 
 	if _is_building:
 		#place tile
@@ -311,7 +309,6 @@ func _process(_delta: float) -> void:
 			if next_cell != _curr_cell:
 				_curr_cell = next_cell
 				_delete_tile(_curr_cell)
-
 
 func _get_cell_under_mouse() -> Vector3i:
 	if camera == null:

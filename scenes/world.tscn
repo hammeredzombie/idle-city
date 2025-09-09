@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://c8ht2n0hhlonv" path="res://scenes/environment/sea.tscn" id="3_4wyf3"]
 [ext_resource type="Script" uid="uid://jp2mpf2cjxx1" path="res://scenes/camera.gd" id="4_71j4m"]
 [ext_resource type="PackedScene" uid="uid://oogv54owp5ht" path="res://scenes/island.tscn" id="4_k0juu"]
-[ext_resource type="PackedScene" uid="uid://ctxqxtqrxcpru" path="res://scenes/road.tscn" id="5_qfnet"]
+[ext_resource type="PackedScene" uid="uid://1c6n06fw2w8x" path="res://scenes/road.tscn" id="5_qfnet"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_71j4m"]
 
