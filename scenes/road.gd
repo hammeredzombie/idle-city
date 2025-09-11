@@ -1,4 +1,7 @@
 extends GridMap
+class_name RoadBuilder
+
+var islands_array: Array[Dictionary]
 
 # Grid map setup
 const MESH_NAME: Dictionary = {
@@ -182,11 +185,6 @@ var meshes: Array[int]
 @onready var intersection_thumbnail: TextureButton = ui.get_node('intersection')
 
 func _ready() -> void:
-	if grid.mesh_library == null:
-		push_error("GridMap has no MeshLibrary assigned.")
-		set_process(false)
-		set_process_input(false)
-		return
 	_assign_mesh_indices()
 	ui.visible = false
 	bulldozer.visible = false
@@ -254,20 +252,25 @@ func _input(event: InputEvent) -> void:
 			_is_deleting = false	
 
 func _process(_delta: float) -> void:
-	# If neither mode is active, clear any leftover preview and bail.
+	## If neither mode is active, clear any leftover preview and return.
 	if not _is_building and not _is_deleting_mode:
 		if _preview_active:
 			_remove_preview(_preview_cell)
 			_preview_active = false
 		return
 
-	# =========================
-	# Build mode (hover + drag)
-	# =========================
+	## If not hovering on island cell, clear preview and return
+	var next_cell: Vector3i = _get_cell_under_mouse()
+	if not _on_island(next_cell):
+		if _preview_active:
+			_remove_preview(_preview_cell)
+			_preview_active = false
+		return
+
+	## Build mode (hover + drag)
 	if _is_building:
-		# Hover preview (only when not dragging)
+		## Hover preview (only when not dragging)
 		if not _is_placing:
-			var next_cell: Vector3i = _get_cell_under_mouse()
 			if _preview_active and next_cell != _preview_cell:
 				_remove_preview(_preview_cell)
 				_preview_active = false
@@ -275,9 +278,8 @@ func _process(_delta: float) -> void:
 				_preview_tile(next_cell)
 				_preview_cell = next_cell
 				_preview_active = true
-		# Drag place
+		## Drag place
 		if _is_placing:
-			var next_cell: Vector3i = _get_cell_under_mouse()
 			if _preview_active:
 				_remove_preview(_preview_cell)
 				_preview_active = false
@@ -286,23 +288,19 @@ func _process(_delta: float) -> void:
 				_place_tile(_curr_cell)
 		return
 
-	# ==========================
-	# Delete mode (hover + drag)
-	# ==========================
+	## Delete mode (hover + drag)
 	if _is_deleting_mode:
-		# Hover delete preview (only when not dragging)
+		## Hover delete preview (only when not dragging)
 		if not _is_deleting:
-			var next_cell: Vector3i = _get_cell_under_mouse()
 			if _preview_active and next_cell != _preview_cell:
 				_remove_preview(_preview_cell)
 				_preview_active = false
 			if not _preview_active or next_cell != _preview_cell:
-				_preview_tile(next_cell) # will place delete preview if something exists there
+				_preview_tile(next_cell)
 				_preview_cell = next_cell
 				_preview_active = true
-		# Drag delete
+		## Drag delete
 		if _is_deleting:
-			var next_cell: Vector3i = _get_cell_under_mouse()
 			if _preview_active:
 				_remove_preview(_preview_cell)
 				_preview_active = false
@@ -427,7 +425,20 @@ func _cycle_tile():
 			_curr_tile = _curr_tile_intersection
 			intersection_thumbnail.texture_normal = thumbnails[_curr_tile]
 
-#
+func _on_island(cell: Vector3i) -> bool:
+	print(cell)
+	for island in islands_array:
+		var start_x = island.start_point.x
+		var end_x = start_x + island.width
+		var start_z = island.start_point.z 
+		var end_z = start_z + island.length
+		if cell.x > start_x and cell.x < end_x:
+			return true
+		elif cell.z > start_z and cell.z < end_z:
+			return true
+	return false
+
+
 func _assign_mesh_indices() -> void:
 	var lib: MeshLibrary = grid.mesh_library
 	for mesh in MESH_ORDER:
