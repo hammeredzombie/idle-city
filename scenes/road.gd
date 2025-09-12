@@ -208,7 +208,7 @@ func _input(event: InputEvent) -> void:
 		bulldozer.visible = _is_deleting_mode
 		_is_building = false
 		ui.visible = false
-		_curr_cell = _get_cell_under_mouse()
+		# _curr_cell = _get_cell_under_mouse()
 		if _preview_active:
 			_remove_preview(_preview_cell)
 		_preview_active = false
@@ -261,11 +261,12 @@ func _process(_delta: float) -> void:
 
 	## If not hovering on island cell, clear preview and return
 	var next_cell: Vector3i = _get_cell_under_mouse()
-	if not _on_island(next_cell):
-		if _preview_active:
-			_remove_preview(_preview_cell)
-			_preview_active = false
-		return
+	# # print(next_cell)
+	# if not _on_island(next_cell):
+	# 	if _preview_active:
+	# 		_remove_preview(_preview_cell)
+	# 		_preview_active = false
+	# 	return
 
 	## Build mode (hover + drag)
 	if _is_building:
@@ -339,12 +340,18 @@ func _get_cell_under_mouse() -> Vector3i:
 	return cell
 
 func _place_tile(cell: Vector3i) -> void:
+	if not _on_island(cell):
+		return
 	set_cell_item(cell, meshes[_curr_tile], get_orthogonal_index_from_basis(_curr_orientation))
 
 func _delete_tile(cell: Vector3i) -> void:
+	if not _on_island(cell):
+		return
 	set_cell_item(cell, -1, 0)
 
 func _preview_tile(cell: Vector3i) -> void:
+	if not _on_island(cell):
+		return
 	var tile_item_index = get_cell_item(cell)
 	var tile_item_orientation = get_cell_item_orientation(cell)
 	_tile_to_delete[0] = tile_item_index
@@ -361,6 +368,8 @@ func _preview_tile(cell: Vector3i) -> void:
 		set_cell_item(cell, meshes[MESH_INDEX.tile_delete_preview])
 
 func _remove_preview(cell: Vector3i) -> void:
+	if not _on_island(cell):
+		return
 	var meshLibraryIndex = get_cell_item(cell)
 	if meshLibraryIndex == -1:
 		return
@@ -426,18 +435,22 @@ func _cycle_tile():
 			intersection_thumbnail.texture_normal = thumbnails[_curr_tile]
 
 func _on_island(cell: Vector3i) -> bool:
-	print(cell)
+	var x = cell.x
+	var z = cell.z
 	for island in islands_array:
-		var start_x = island.start_point.x
-		var end_x = start_x + island.width
-		var start_z = island.start_point.z 
-		var end_z = start_z + island.length
-		if cell.x > start_x and cell.x < end_x:
-			return true
-		elif cell.z > start_z and cell.z < end_z:
-			return true
-	return false
+		var island_start: Vector3i = island.start_point
+		var island_width: int = island.width
+		var island_length: int = island.length
 
+		var interior_min_x: int = island_start.x * 2 + 2
+		var interior_max_x: int = (island_start.x + island_width) * 2 - 2
+		var interior_min_z: int = island_start.z * 2 + 2
+		var interior_max_z: int = (island_start.z + island_length) * 2 - 2
+
+		if x >= interior_min_x and x <= interior_max_x and \
+			z >= interior_min_z and z <= interior_max_z:
+				return true
+	return false
 
 func _assign_mesh_indices() -> void:
 	var lib: MeshLibrary = grid.mesh_library
