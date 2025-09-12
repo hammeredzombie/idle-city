@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bfchpcrjk07b"]
-
-[ext_resource type="PackedScene" uid="uid://c75vg55d88hud" path="res://assets/tiles/grid.blend" id="1_mabi7"]
-
-[node name="Grid" type="Node3D"]
-
-[node name="grid" parent="." instance=ExtResource("1_mabi7")]

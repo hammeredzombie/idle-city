@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://bhbb8f4tg64w"]
+
+[ext_resource type="MeshLibrary" uid="uid://4kulrbvsj0a7" path="res://assets/tiles/zoning-grid.tres" id="1_1vcc7"]
+
+[node name="Zoning" type="GridMap"]
+mesh_library = ExtResource("1_1vcc7")
+cell_size = Vector3(0.5, 0.5, 0.5)

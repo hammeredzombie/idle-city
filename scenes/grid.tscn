@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bhbb8f4tg64w"]
-
-[ext_resource type="MeshLibrary" uid="uid://4kulrbvsj0a7" path="res://assets/tiles/grid.tres" id="1_t5fjg"]
-
-[node name="Grid" type="GridMap"]
-mesh_library = ExtResource("1_t5fjg")

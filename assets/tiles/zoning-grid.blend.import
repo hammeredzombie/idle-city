@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://c75vg55d88hud"
-path="res://.godot/imported/grid.blend-fc166e05a7bf69957414e0eadb01422f.scn"
+path="res://.godot/imported/zoning-grid.blend-3e3602f6c12d8f1daa09c4f2a146849d.scn"
 
 [deps]
 
-source_file="res://assets/tiles/grid.blend"
-dest_files=["res://.godot/imported/grid.blend-fc166e05a7bf69957414e0eadb01422f.scn"]
+source_file="res://assets/tiles/zoning-grid.blend"
+dest_files=["res://.godot/imported/zoning-grid.blend-3e3602f6c12d8f1daa09c4f2a146849d.scn"]
 
 [params]
 
